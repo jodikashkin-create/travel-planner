@@ -1,0 +1,124 @@
+.restaurant-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  gap: 1rem;
+  transition: all var(--transition-normal);
+  animation: slideUp 0.4s ease both;
+  border: 1px solid transparent;
+}
+
+.restaurant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+.restaurant-card__icon-area {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 159, 67, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.restaurant-card__icon {
+  font-size: 1.6rem;
+}
+
+.restaurant-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.restaurant-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.restaurant-card__cuisine {
+  font-size: 0.85rem;
+  color: var(--coral);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.25rem;
+}
+
+.restaurant-card__location {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.restaurant-card__description {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.restaurant-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.restaurant-card__rating {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(255, 159, 67, 0.2));
+  border-radius: var(--radius-full);
+  color: var(--orange);
+}
+
+.restaurant-card__price {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.25));
+  border-radius: var(--radius-full);
+  color: var(--coral-dark);
+}
+
+.restaurant-card__meal {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+@media (max-width: 480px) {
+  .restaurant-card {
+    padding: 1.25rem;
+  }
+
+  .restaurant-card__icon-area {
+    width: 44px;
+    height: 44px;
+  }
+
+  .restaurant-card__icon {
+    font-size: 1.3rem;
+  }
+}

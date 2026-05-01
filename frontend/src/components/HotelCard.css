@@ -1,0 +1,113 @@
+.hotel-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  gap: 1rem;
+  transition: all var(--transition-normal);
+  animation: slideUp 0.4s ease both;
+  border: 1px solid transparent;
+}
+
+.hotel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(78, 205, 196, 0.3);
+}
+
+.hotel-card__icon-area {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(116, 185, 255, 0.15));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hotel-card__icon {
+  font-size: 1.6rem;
+}
+
+.hotel-card__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hotel-card__name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.hotel-card__location {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.hotel-card__description {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hotel-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hotel-card__rating {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(255, 159, 67, 0.2));
+  border-radius: var(--radius-full);
+  color: var(--orange);
+}
+
+.hotel-card__price {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(78, 205, 196, 0.25));
+  border-radius: var(--radius-full);
+  color: var(--teal-dark);
+}
+
+.hotel-card__type {
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+  .hotel-card {
+    padding: 1.25rem;
+  }
+
+  .hotel-card__icon-area {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hotel-card__icon {
+    font-size: 1.3rem;
+  }
+}

@@ -1,0 +1,222 @@
+.home {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+}
+
+.home__bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.home__bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
+.home__bg-shape--1 {
+  width: 500px;
+  height: 500px;
+  background: var(--coral);
+  top: -15%;
+  right: -10%;
+  animation: float 8s ease-in-out infinite;
+}
+
+.home__bg-shape--2 {
+  width: 400px;
+  height: 400px;
+  background: var(--purple);
+  bottom: -10%;
+  left: -10%;
+  animation: float 10s ease-in-out infinite reverse;
+}
+
+.home__bg-shape--3 {
+  width: 300px;
+  height: 300px;
+  background: var(--teal);
+  top: 40%;
+  left: 30%;
+  animation: float 7s ease-in-out infinite 2s;
+}
+
+.home__content {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.5rem;
+  width: 100%;
+  max-width: 640px;
+}
+
+.home__hero {
+  text-align: center;
+  animation: fadeIn 0.8s ease;
+}
+
+.home__emojis {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.home__emoji {
+  font-size: 2.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.home__emoji--1 { animation-delay: 0s; }
+.home__emoji--2 { animation-delay: 0.5s; }
+.home__emoji--3 { animation-delay: 1s; }
+.home__emoji--4 { animation-delay: 1.5s; }
+.home__emoji--5 { animation-delay: 2s; }
+
+.home__title {
+  font-size: 3rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.home__title-highlight {
+  background: linear-gradient(135deg, var(--coral), var(--yellow), var(--teal));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease infinite;
+}
+
+.home__subtitle {
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  max-width: 480px;
+  margin: 0 auto 2.5rem;
+}
+
+.home__form {
+  margin-bottom: 3rem;
+}
+
+.home__input-group {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.home__input {
+  flex: 1;
+  padding: 0.85rem 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: all var(--transition-normal);
+  backdrop-filter: blur(8px);
+}
+
+.home__input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.home__input:focus {
+  border-color: var(--teal);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.15);
+}
+
+.home__error {
+  margin-top: 0.75rem;
+  color: var(--coral-light);
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: bounceIn 0.4s ease;
+}
+
+.home__features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.home__feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.home__feature-icon {
+  font-size: 2rem;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-normal);
+}
+
+.home__feature:hover .home__feature-icon {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.home__feature-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@media (max-width: 768px) {
+  .home__title {
+    font-size: 2.2rem;
+  }
+
+  .home__subtitle {
+    font-size: 1rem;
+  }
+
+  .home__input-group {
+    flex-direction: column;
+  }
+
+  .home__emoji {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home__title {
+    font-size: 1.8rem;
+  }
+
+  .home__features {
+    gap: 1.5rem;
+  }
+
+  .home__emojis {
+    gap: 0.75rem;
+  }
+
+  .home__emoji {
+    font-size: 1.5rem;
+  }
+}

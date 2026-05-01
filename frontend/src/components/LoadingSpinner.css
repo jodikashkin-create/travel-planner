@@ -1,0 +1,120 @@
+.spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 3rem 1rem;
+}
+
+.spinner__emojis {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.spinner__emoji {
+  position: absolute;
+  font-size: 1.5rem;
+  animation: orbitEmoji 2.5s ease-in-out infinite;
+}
+
+.spinner__emoji--1 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+}
+
+.spinner__emoji--2 {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  animation-delay: 0.625s;
+}
+
+.spinner__emoji--3 {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 1.25s;
+}
+
+.spinner__emoji--4 {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  animation-delay: 1.875s;
+}
+
+@keyframes orbitEmoji {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.spinner__ring {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--bg-subtle);
+  border-top-color: var(--coral);
+  border-right-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.spinner__message {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  animation: pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(135deg, var(--coral), var(--purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Sizes */
+.spinner--small .spinner__emojis {
+  width: 50px;
+  height: 50px;
+}
+
+.spinner--small .spinner__emoji {
+  font-size: 1rem;
+}
+
+.spinner--small .spinner__ring {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+.spinner--small .spinner__message {
+  font-size: 0.85rem;
+}
+
+.spinner--large .spinner__emojis {
+  width: 100px;
+  height: 100px;
+}
+
+.spinner--large .spinner__emoji {
+  font-size: 2rem;
+}
+
+.spinner--large .spinner__ring {
+  width: 64px;
+  height: 64px;
+  border-width: 5px;
+}
+
+.spinner--large .spinner__message {
+  font-size: 1.2rem;
+}
