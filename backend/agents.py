@@ -98,7 +98,7 @@ async def _run_agent(system_prompt: str, user_prompt: str) -> str:
     """
     response = await client.messages.create(
         model=MODEL,
-        max_tokens=8192,
+        max_tokens=16384,
         system=system_prompt,
         tools=[WEB_SEARCH_TOOL],
         messages=[{"role": "user", "content": user_prompt}],
