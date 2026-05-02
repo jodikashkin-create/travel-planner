@@ -114,45 +114,84 @@ async def generate_itinerary(
     start_date: str,
     end_date: str,
     preferences: str = "",
+    accommodation_type: str = "",
+    experience_type: str = "",
+    restaurant_pref: str = "",
+    hotspots: str = "",
+    downtime_hours: str = "2",
 ) -> dict:
     """
     Generate a day-by-day travel itinerary for the given destination and dates.
     The agent uses web search to find current, real-world information.
+    Includes seasonal tips, excitement highlights, downtime planning, and
+    personalized recommendations based on traveler preferences.
     """
-    pref_section = f"\nTraveler preferences: {preferences}" if preferences else ""
+    # Build conditional preference sections
+    sections = []
+    if preferences:
+        sections.append(f"General preferences: {preferences}")
+    if accommodation_type:
+        sections.append(f"Accommodation preference: {accommodation_type}")
+    if experience_type:
+        sections.append(f"Experience preference: {experience_type}")
+    if restaurant_pref:
+        sections.append(f"Restaurant preference: {restaurant_pref}")
+    if hotspots:
+        sections.append(f"Also consider these specific interests/hotspots: {hotspots}")
+    pref_block = "\n".join(sections)
 
-    system_prompt = """You are a world-class travel planner agent. You have access to web search
-to find current, real information. Always search the web for up-to-date details about
-attractions, events, pricing, and practical travel tips. Return structured JSON responses."""
+    system_prompt = (
+        "You are a world-class travel planner who creates exciting, deeply personalized "
+        "itineraries that make travelers count down the days until their trip. You have "
+        "access to web search — always search the web for current, real-world information "
+        "about attractions, seasonal events, weather, pricing, and practical travel tips. "
+        "Return structured JSON responses."
+    )
 
-    prompt = f"""Create a detailed day-by-day itinerary for a trip to {destination} from {start_date} to {end_date}.
-{pref_section}
+    prompt = f"""Create a detailed, exciting day-by-day itinerary for a trip to {destination}.
+
+The trip is from {start_date} to {end_date}. Consider what's in season, weather patterns, and any seasonal events or festivals during this time.
+
+{pref_block}
+
+Plan {downtime_hours} hours of downtime/free time each day for rest, wandering, or spontaneous exploration.
 
 Search the web to find current, real information about:
-- Top attractions and activities in {destination}
-- Local events happening during those dates
-- Practical tips (transport, weather, costs)
+- Top attractions, activities, and hidden gems in {destination}
+- Seasonal events, festivals, or special happenings during those dates
+- Current weather patterns for that time of year
+- Practical tips (transport, costs, what to wear)
+- The best local food spots
 
 Return your answer as a JSON object with this exact structure (no extra keys):
 {{
   "destination": "{destination}",
   "start_date": "{start_date}",
   "end_date": "{end_date}",
-  "summary": "A 2-3 sentence trip overview",
+  "summary": "A 2-3 sentence trip overview that gets people excited",
+  "seasonal_overview": "A 2-3 sentence overview of what the season/weather is like during the trip dates, including any notable seasonal events or considerations",
   "days": [
     {{
       "day": 1,
       "date": "YYYY-MM-DD",
       "title": "Short theme for the day",
+      "excitement": "One enthusiastic sentence about what makes this day special — what should travelers be MOST excited about today",
+      "seasonal_tip": "A tip related to the season/weather for this day",
       "activities": [
         {{
           "time": "9:00 AM",
           "activity": "What to do",
           "description": "Details and tips",
           "location": "Where",
-          "estimated_cost": "$XX"
+          "duration": "2 hours",
+          "estimated_cost": "$XX",
+          "why_exciting": "One sentence on why this is a must-do"
         }}
       ],
+      "downtime": {{
+        "suggested_time": "2:00 PM - 4:00 PM",
+        "suggestion": "What to do during downtime — e.g., relax at the hotel pool, wander the neighborhood, grab a coffee at a local cafe"
+      }},
       "meals": {{
         "breakfast": "Suggestion with location",
         "lunch": "Suggestion with location",
@@ -188,19 +227,34 @@ async def search_hotels(
     start_date: str,
     end_date: str,
     preferences: str = "",
+    accommodation_type: str = "",
 ) -> dict:
     """
     Search for hotels at the destination. The agent uses web search to find
     real, currently operating hotels with actual pricing and ratings.
+    Prioritizes results matching the traveler's accommodation preference.
     """
     pref_section = f"\nPreferences: {preferences}" if preferences else ""
 
-    system_prompt = """You are a hotel search assistant agent. You have access to web search
-to find real, currently operating hotels with actual pricing and ratings.
-Always search the web for up-to-date hotel information. Return structured JSON responses."""
+    accom_section = ""
+    if accommodation_type:
+        accom_section = (
+            f"\nThe traveler is looking for: {accommodation_type}. "
+            "Prioritize hotels that match this preference. For example, if they want "
+            "'coastal' find beachfront hotels, if 'pool' find hotels with great pools, "
+            "if 'city center' find centrally located hotels, if 'boutique' find unique "
+            "boutique properties."
+        )
+
+    system_prompt = (
+        "You are a hotel search assistant agent. You have access to web search "
+        "to find real, currently operating hotels with actual pricing and ratings. "
+        "Always search the web for up-to-date hotel information. Return structured "
+        "JSON responses."
+    )
 
     prompt = f"""Find real, currently operating hotels in {destination} for a stay from {start_date} to {end_date}.
-{pref_section}
+{pref_section}{accom_section}
 
 Search the web to find actual hotels with real pricing and ratings.
 
@@ -217,7 +271,8 @@ Return your answer as a JSON object with this exact structure:
       "rating": 4.5,
       "location": "Neighborhood / address",
       "amenities": ["WiFi", "Pool", "Breakfast"],
-      "booking_tip": "Any useful booking info"
+      "booking_tip": "Any useful booking info",
+      "match_reason": "Why this hotel matches the traveler's preference"
     }}
   ]
 }}
@@ -239,19 +294,44 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 async def search_restaurants(
     destination: str,
     preferences: str = "",
+    restaurant_pref: str = "",
 ) -> dict:
     """
     Search for local restaurants at the destination. The agent uses web search
     to find real restaurants with actual ratings and pricing.
+    Adapts results based on whether the traveler wants social-media-famous spots,
+    hidden local gems, or a mix of both.
     """
     pref_section = f"\nDining preferences: {preferences}" if preferences else ""
 
-    system_prompt = """You are a local food expert agent. You have access to web search
-to find real, currently operating restaurants with actual ratings and pricing.
-Always search the web for up-to-date restaurant information. Return structured JSON responses."""
+    # Tailor the focus based on restaurant_pref
+    if restaurant_pref and "social media" in restaurant_pref.lower():
+        focus_section = (
+            "\nFocus on trending, Instagram-famous, and TikTok-viral restaurants. "
+            "The traveler wants the spots that are blowing up on social media right now — "
+            "photogenic dishes, viral food trends, influencer-recommended places."
+        )
+    elif restaurant_pref and "local gem" in restaurant_pref.lower():
+        focus_section = (
+            "\nFocus on hidden gems and locals-only spots. The traveler wants hole-in-the-wall "
+            "places, family-run restaurants, neighborhood favorites that tourists usually miss — "
+            "the spots where locals actually eat."
+        )
+    else:
+        focus_section = (
+            "\nInclude a balance of both trending social-media-famous spots AND hidden local gems. "
+            "The traveler wants a mix of photogenic viral restaurants and authentic locals-only favorites."
+        )
+
+    system_prompt = (
+        "You are a local food expert agent. You have access to web search "
+        "to find real, currently operating restaurants with actual ratings and pricing. "
+        "Always search the web for up-to-date restaurant information. Return structured "
+        "JSON responses."
+    )
 
     prompt = f"""Find real, currently operating restaurants in {destination} that a traveler should try.
-{pref_section}
+{pref_section}{focus_section}
 
 Search the web to find actual restaurants with real ratings and price info.
 
@@ -267,7 +347,8 @@ Return your answer as a JSON object with this exact structure:
       "description": "2-3 sentence description of the food and atmosphere",
       "location": "Neighborhood / address",
       "must_try": "Signature dish or recommendation",
-      "reservation_tip": "Any useful reservation info"
+      "reservation_tip": "Any useful reservation info",
+      "vibe": "social media famous / local gem / classic institution / trendy newcomer"
     }}
   ]
 }}

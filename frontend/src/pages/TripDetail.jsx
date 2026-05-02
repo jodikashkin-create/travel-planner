@@ -28,6 +28,17 @@ const DAY_COLORS = [
 function StructuredItineraryView({ data }) {
   return (
     <div className="itinerary-structured">
+      {/* Seasonal Overview */}
+      {data.seasonal_overview && (
+        <div className="itinerary-seasonal-overview">
+          <span className="itinerary-seasonal-overview__icon">🌤️</span>
+          <div>
+            <h3>Seasonal Guide</h3>
+            <p>{data.seasonal_overview}</p>
+          </div>
+        </div>
+      )}
+
       {/* Trip Summary */}
       {data.summary && (
         <div className="itinerary-summary">
@@ -44,13 +55,35 @@ function StructuredItineraryView({ data }) {
             {day.date && <span className="itinerary-block__date">{formatDate(day.date)}</span>}
           </div>
           <div className="itinerary-block__body">
+            {/* Excitement Banner */}
+            {day.excitement && (
+              <div className="itinerary-block__excitement">
+                <span>🎉</span>
+                <p>{day.excitement}</p>
+              </div>
+            )}
+
+            {/* Seasonal Tip */}
+            {day.seasonal_tip && (
+              <div className="itinerary-block__seasonal-tip">
+                <span>🌡️</span>
+                <span>{day.seasonal_tip}</span>
+              </div>
+            )}
+
             {/* Activities */}
             {day.activities && day.activities.map((act, j) => (
               <div key={j} className="itinerary-activity">
-                <div className="itinerary-activity__time">{act.time || ''}</div>
+                <div className="itinerary-activity__time">
+                  {act.time || ''}
+                  {act.duration && <span className="itinerary-activity__duration">⏱️ {act.duration}</span>}
+                </div>
                 <div className="itinerary-activity__content">
                   <strong>{act.activity}</strong>
                   {act.description && <p className="itinerary-activity__desc">{act.description}</p>}
+                  {act.why_exciting && (
+                    <p className="itinerary-activity__exciting">✨ {act.why_exciting}</p>
+                  )}
                   <div className="itinerary-activity__meta">
                     {act.location && <span className="itinerary-activity__location">📍 {act.location}</span>}
                     {act.estimated_cost && <span className="itinerary-activity__cost">💰 {act.estimated_cost}</span>}
@@ -58,6 +91,20 @@ function StructuredItineraryView({ data }) {
                 </div>
               </div>
             ))}
+
+            {/* Downtime Block */}
+            {day.downtime && (
+              <div className="itinerary-downtime">
+                <div className="itinerary-downtime__header">
+                  <span>😌</span>
+                  <h4>Downtime</h4>
+                  {day.downtime.suggested_time && (
+                    <span className="itinerary-downtime__time">{day.downtime.suggested_time}</span>
+                  )}
+                </div>
+                <p>{day.downtime.suggestion}</p>
+              </div>
+            )}
 
             {/* Meals */}
             {day.meals && (
@@ -160,6 +207,12 @@ function ItineraryView({ itinerary }) {
   if (typeof itinerary === 'object' && itinerary !== null) {
     // Check if it has content field (from old DB format)
     const data = itinerary.content || itinerary
+
+    // Handle case where model returned the days array directly (no wrapper object)
+    if (Array.isArray(data) && data.length > 0 && data[0].day !== undefined) {
+      return <StructuredItineraryView data={{ days: data }} />
+    }
+
     if (typeof data === 'object' && data.days && Array.isArray(data.days)) {
       return <StructuredItineraryView data={data} />
     }
@@ -339,6 +392,22 @@ function TripDetail() {
             <p className="trip-detail__preferences">
               💡 {trip.preferences}
             </p>
+          )}
+          {(trip.accommodation_type || trip.experience_type || trip.restaurant_pref || trip.downtime_hours) && (
+            <div className="trip-detail__tags">
+              {trip.accommodation_type && (
+                <span className="trip-detail__tag trip-detail__tag--accommodation">🏨 {trip.accommodation_type}</span>
+              )}
+              {trip.experience_type && (
+                <span className="trip-detail__tag trip-detail__tag--experience">🎯 {trip.experience_type}</span>
+              )}
+              {trip.restaurant_pref && (
+                <span className="trip-detail__tag trip-detail__tag--restaurant">🍽️ {trip.restaurant_pref}</span>
+              )}
+              {trip.downtime_hours && (
+                <span className="trip-detail__tag trip-detail__tag--downtime">⏰ {trip.downtime_hours}h downtime/day</span>
+              )}
+            </div>
           )}
         </div>
         <button className="trip-detail__delete" onClick={handleDelete} title="Delete trip">

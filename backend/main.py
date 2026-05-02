@@ -116,6 +116,11 @@ class CreateTripRequest(BaseModel):
     start_date: str
     end_date: str
     preferences: str = ""
+    accommodation_type: str = ""
+    experience_type: str = ""
+    restaurant_pref: str = ""
+    hotspots: str = ""
+    downtime_hours: str = "2"
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +179,11 @@ async def create_trip(
         start_date=body.start_date,
         end_date=body.end_date,
         preferences=body.preferences,
+        accommodation_type=body.accommodation_type,
+        experience_type=body.experience_type,
+        restaurant_pref=body.restaurant_pref,
+        hotspots=body.hotspots,
+        downtime_hours=body.downtime_hours,
     )
     session.add(trip)
     await session.commit()
@@ -273,6 +283,11 @@ async def generate_trip_itinerary(
             start_date=trip.start_date,
             end_date=trip.end_date,
             preferences=trip.preferences,
+            accommodation_type=trip.accommodation_type or "",
+            experience_type=trip.experience_type or "",
+            restaurant_pref=trip.restaurant_pref or "",
+            hotspots=trip.hotspots or "",
+            downtime_hours=trip.downtime_hours or "2",
         ),
         trip_id=trip_id,
         model_class=Itinerary,
@@ -306,6 +321,7 @@ async def search_trip_hotels(
             start_date=trip.start_date,
             end_date=trip.end_date,
             preferences=trip.preferences,
+            accommodation_type=trip.accommodation_type or "",
         ),
         trip_id=trip_id,
         model_class=HotelResult,
@@ -337,6 +353,7 @@ async def search_trip_restaurants(
         coro=search_restaurants(
             destination=trip.destination,
             preferences=trip.preferences,
+            restaurant_pref=trip.restaurant_pref or "",
         ),
         trip_id=trip_id,
         model_class=RestaurantResult,

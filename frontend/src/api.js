@@ -38,10 +38,10 @@ export async function getOrCreateUser(username) {
 }
 
 // Trips
-export function createTrip({ user_id, destination, start_date, end_date, preferences }) {
+export function createTrip({ user_id, destination, start_date, end_date, preferences, accommodation_type, experience_type, restaurant_pref, hotspots, downtime_hours }) {
   return request('/trips', {
     method: 'POST',
-    body: JSON.stringify({ user_id, destination, start_date, end_date, preferences }),
+    body: JSON.stringify({ user_id, destination, start_date, end_date, preferences, accommodation_type, experience_type, restaurant_pref, hotspots, downtime_hours }),
   });
 }
 

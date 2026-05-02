@@ -80,6 +80,11 @@ class Trip(Base):
     start_date = Column(String(20), nullable=False)  # ISO date string
     end_date = Column(String(20), nullable=False)
     preferences = Column(Text, default="")  # free-text preferences
+    accommodation_type = Column(Text, default="")  # coastal, city center, pool, resort, boutique, etc.
+    experience_type = Column(Text, default="")  # active, cultural, relaxation, adventure, nightlife, etc.
+    restaurant_pref = Column(Text, default="")  # social media hype, local gems, mix of both
+    hotspots = Column(Text, default="")  # additional hotspots or local gems to consider
+    downtime_hours = Column(String(10), default="2")  # hours of downtime per day
     created_at = Column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -103,6 +108,11 @@ class Trip(Base):
             "start_date": self.start_date,
             "end_date": self.end_date,
             "preferences": self.preferences,
+            "accommodation_type": self.accommodation_type,
+            "experience_type": self.experience_type,
+            "restaurant_pref": self.restaurant_pref,
+            "hotspots": self.hotspots,
+            "downtime_hours": self.downtime_hours,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_related:
