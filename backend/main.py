@@ -2,10 +2,11 @@
 FastAPI application for the Travel Planner.
 
 Provides REST endpoints for users, trips, and AI-powered itinerary /
-hotel / restaurant generation.  Serves the React frontend as static
-files from ../frontend/dist.
+hotel / restaurant generation.  Uses background tasks for long-running
+AI operations. Serves the React frontend as static files from ../frontend/dist.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -28,6 +29,7 @@ from .database import (
     RestaurantResult,
     Trip,
     User,
+    async_session,
     get_session,
     init_db,
 )
@@ -40,6 +42,37 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# In-memory generation status tracker
+# ---------------------------------------------------------------------------
+# Tracks AI generation jobs: {"{trip_id}_{type}": "generating" | "done" | "error:msg"}
+_generation_status: dict[str, str] = {}
+
+
+async def _run_background_generation(key: str, coro, trip_id: int, model_class, field_name: str):
+    """
+    Run an AI generation task in the background.
+    Saves the result to the database and updates the status tracker.
+    """
+    try:
+        result = await coro
+        # Save to database using a fresh session
+        async with async_session() as session:
+            if model_class == Itinerary:
+                obj = Itinerary(trip_id=trip_id, content=json.dumps(result, ensure_ascii=False))
+            elif model_class == HotelResult:
+                obj = HotelResult(trip_id=trip_id, results=json.dumps(result, ensure_ascii=False))
+            else:
+                obj = RestaurantResult(trip_id=trip_id, results=json.dumps(result, ensure_ascii=False))
+            session.add(obj)
+            await session.commit()
+        _generation_status[key] = "done"
+        logger.info("Background %s generation completed for trip #%d", field_name, trip_id)
+    except Exception as exc:
+        _generation_status[key] = f"error:{exc}"
+        logger.exception("Background %s generation failed for trip #%d", field_name, trip_id)
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +90,7 @@ async def lifespan(_app: FastAPI):
 # ---------------------------------------------------------------------------
 app = FastAPI(
     title="Travel Planner API",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -93,7 +126,6 @@ async def create_user(
     body: CreateUserRequest,
     session: AsyncSession = Depends(get_session),
 ):
-    # Check if username already exists
     existing = await session.execute(
         select(User).where(User.username == body.username)
     )
@@ -131,7 +163,6 @@ async def create_trip(
     body: CreateTripRequest,
     session: AsyncSession = Depends(get_session),
 ):
-    # Verify user exists
     result = await session.execute(select(User).where(User.id == body.user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -201,7 +232,20 @@ async def delete_trip(
 
 
 # ---------------------------------------------------------------------------
-# AI-powered endpoints
+# Generation status endpoint
+# ---------------------------------------------------------------------------
+@app.get("/api/trips/{trip_id}/generation-status")
+async def generation_status(trip_id: int):
+    """Return the current status of any AI generation tasks for a trip."""
+    return {
+        "itinerary": _generation_status.get(f"{trip_id}_itinerary"),
+        "hotels": _generation_status.get(f"{trip_id}_hotels"),
+        "restaurants": _generation_status.get(f"{trip_id}_restaurants"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# AI-powered endpoints (background task pattern)
 # ---------------------------------------------------------------------------
 @app.post("/api/trips/{trip_id}/itinerary")
 async def generate_trip_itinerary(
@@ -213,29 +257,29 @@ async def generate_trip_itinerary(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    try:
-        itinerary_data = await generate_itinerary(
+    key = f"{trip_id}_itinerary"
+
+    # Don't start another if already in progress
+    if _generation_status.get(key) == "generating":
+        return {"status": "generating", "trip_id": trip_id}
+
+    _generation_status[key] = "generating"
+
+    # Launch in background — returns immediately
+    asyncio.create_task(_run_background_generation(
+        key=key,
+        coro=generate_itinerary(
             destination=trip.destination,
             start_date=trip.start_date,
             end_date=trip.end_date,
             preferences=trip.preferences,
-        )
-    except Exception as exc:
-        logger.exception("Itinerary generation failed for trip #%d", trip_id)
-        raise HTTPException(
-            status_code=502,
-            detail=f"AI service error: {exc}",
-        )
-
-    itinerary = Itinerary(
+        ),
         trip_id=trip_id,
-        content=json.dumps(itinerary_data, ensure_ascii=False),
-    )
-    session.add(itinerary)
-    await session.commit()
-    await session.refresh(itinerary)
-    logger.info("Itinerary saved for trip #%d", trip_id)
-    return itinerary.to_dict()
+        model_class=Itinerary,
+        field_name="itinerary",
+    ))
+
+    return {"status": "generating", "trip_id": trip_id}
 
 
 @app.post("/api/trips/{trip_id}/hotels")
@@ -248,29 +292,27 @@ async def search_trip_hotels(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    try:
-        hotel_data = await search_hotels(
+    key = f"{trip_id}_hotels"
+
+    if _generation_status.get(key) == "generating":
+        return {"status": "generating", "trip_id": trip_id}
+
+    _generation_status[key] = "generating"
+
+    asyncio.create_task(_run_background_generation(
+        key=key,
+        coro=search_hotels(
             destination=trip.destination,
             start_date=trip.start_date,
-end_date=trip.end_date,
+            end_date=trip.end_date,
             preferences=trip.preferences,
-        )
-    except Exception as exc:
-        logger.exception("Hotel search failed for trip #%d", trip_id)
-        raise HTTPException(
-            status_code=502,
-            detail=f"AI service error: {exc}",
-        )
-
-    hotel_result = HotelResult(
+        ),
         trip_id=trip_id,
-        results=json.dumps(hotel_data, ensure_ascii=False),
-    )
-    session.add(hotel_result)
-    await session.commit()
-    await session.refresh(hotel_result)
-    logger.info("Hotel results saved for trip #%d", trip_id)
-    return hotel_result.to_dict()
+        model_class=HotelResult,
+        field_name="hotels",
+    ))
+
+    return {"status": "generating", "trip_id": trip_id}
 
 
 @app.post("/api/trips/{trip_id}/restaurants")
@@ -283,27 +325,25 @@ async def search_trip_restaurants(
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
 
-    try:
-        restaurant_data = await search_restaurants(
+    key = f"{trip_id}_restaurants"
+
+    if _generation_status.get(key) == "generating":
+        return {"status": "generating", "trip_id": trip_id}
+
+    _generation_status[key] = "generating"
+
+    asyncio.create_task(_run_background_generation(
+        key=key,
+        coro=search_restaurants(
             destination=trip.destination,
             preferences=trip.preferences,
-        )
-    except Exception as exc:
-        logger.exception("Restaurant search failed for trip #%d", trip_id)
-        raise HTTPException(
-            status_code=502,
-            detail=f"AI service error: {exc}",
-        )
-
-    restaurant_result = RestaurantResult(
+        ),
         trip_id=trip_id,
-        results=json.dumps(restaurant_data, ensure_ascii=False),
-    )
-    session.add(restaurant_result)
-    await session.commit()
-    await session.refresh(restaurant_result)
-    logger.info("Restaurant results saved for trip #%d", trip_id)
-    return restaurant_result.to_dict()
+        model_class=RestaurantResult,
+        field_name="restaurants",
+    ))
+
+    return {"status": "generating", "trip_id": trip_id}
 
 
 # ---------------------------------------------------------------------------
@@ -311,7 +351,7 @@ async def search_trip_restaurants(
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "service": "travel-planner"}
+    return {"status": "ok", "service": "travel-planner", "version": "2.0.0"}
 
 
 # ---------------------------------------------------------------------------

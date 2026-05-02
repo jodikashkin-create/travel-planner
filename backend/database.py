@@ -106,17 +106,47 @@ class Trip(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
         if include_related:
-            data["itinerary"] = (
-                self.itineraries[-1].to_dict() if self.itineraries else None
-            )
-            data["hotels"] = (
-                self.hotel_results[-1].to_dict() if self.hotel_results else None
-            )
-            data["restaurants"] = (
-                self.restaurant_results[-1].to_dict()
-                if self.restaurant_results
-                else None
-            )
+            # Itinerary: return the parsed content directly (structured JSON)
+            if self.itineraries:
+                itin = self.itineraries[-1]
+                try:
+                    data["itinerary"] = json.loads(itin.content)
+                except (json.JSONDecodeError, TypeError):
+                    data["itinerary"] = itin.content
+            else:
+                data["itinerary"] = None
+
+            # Hotels: extract the hotels array for the frontend
+            if self.hotel_results:
+                hr = self.hotel_results[-1]
+                try:
+                    results = json.loads(hr.results)
+                    if isinstance(results, dict):
+                        data["hotels"] = results.get("hotels", [])
+                    elif isinstance(results, list):
+                        data["hotels"] = results
+                    else:
+                        data["hotels"] = []
+                except (json.JSONDecodeError, TypeError):
+                    data["hotels"] = []
+            else:
+                data["hotels"] = []
+
+            # Restaurants: extract the restaurants array for the frontend
+            if self.restaurant_results:
+                rr = self.restaurant_results[-1]
+                try:
+                    results = json.loads(rr.results)
+                    if isinstance(results, dict):
+                        data["restaurants"] = results.get("restaurants", [])
+                    elif isinstance(results, list):
+                        data["restaurants"] = results
+                    else:
+                        data["restaurants"] = []
+                except (json.JSONDecodeError, TypeError):
+                    data["restaurants"] = []
+            else:
+                data["restaurants"] = []
         return data
 
 

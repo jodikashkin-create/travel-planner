@@ -57,7 +57,7 @@ export function deleteTrip(tripId) {
   return request(`/trips/${tripId}`, { method: 'DELETE' });
 }
 
-// AI Generation
+// AI Generation (returns immediately — generation runs in background)
 export function generateItinerary(tripId) {
   return request(`/trips/${tripId}/itinerary`, { method: 'POST' });
 }
@@ -68,4 +68,9 @@ export function searchHotels(tripId) {
 
 export function searchRestaurants(tripId) {
   return request(`/trips/${tripId}/restaurants`, { method: 'POST' });
+}
+
+// Generation status polling
+export function getGenerationStatus(tripId) {
+  return request(`/trips/${tripId}/generation-status`);
 }

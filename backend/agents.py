@@ -1,45 +1,30 @@
 """
-AI agent functions powered by the Anthropic SDK with web search.
+AI agent functions powered by the Claude Agent SDK with web search.
 
-Each function sends a crafted prompt to Claude with the server-side web_search
-tool enabled, then parses the response into structured data.
+Uses the claude-agent-sdk package (NOT the basic anthropic client) to run
+a full agent loop with built-in WebSearch tool for real-time information.
 """
 
+import asyncio
 import json
 import logging
 import re
 from typing import Any
 
-from anthropic import Anthropic
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ResultMessage,
+    TextBlock,
+    query,
+)
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Client & tool setup
-# ---------------------------------------------------------------------------
-client = Anthropic()  # picks up ANTHROPIC_API_KEY from env
-
-MODEL = "claude-sonnet-4-20250514"
-
-WEB_SEARCH_TOOL = {
-    "type": "web_search_20250305",
-    "name": "web_search",
-    "max_uses": 5,
-}
 
 
 # ---------------------------------------------------------------------------
 # Response helpers
 # ---------------------------------------------------------------------------
-def _extract_text(response) -> str:
-    """Pull all text blocks from a Claude response, ignoring tool-use blocks."""
-    parts: list[str] = []
-    for block in response.content:
-        if hasattr(block, "text"):
-            parts.append(block.text)
-    return "\n".join(parts)
-
-
 def _extract_json(text: str) -> Any:
     """
     Try to pull a JSON object or array from text that may contain markdown
@@ -81,6 +66,34 @@ def _extract_json(text: str) -> Any:
     return {"raw": text}
 
 
+async def _run_agent(prompt: str, system_prompt: str, max_turns: int = 5) -> str:
+    """
+    Run a Claude Agent SDK query with WebSearch enabled.
+    Collects all text output and returns the final result string.
+    """
+    result_text = ""
+    assistant_text = ""
+
+    async for message in query(
+        prompt=prompt,
+        options=ClaudeAgentOptions(
+            system_prompt=system_prompt,
+            max_turns=max_turns,
+            allowed_tools=["WebSearch"],
+        ),
+    ):
+        if isinstance(message, AssistantMessage):
+            for block in message.content:
+                if isinstance(block, TextBlock):
+                    assistant_text += block.text
+        elif isinstance(message, ResultMessage):
+            if message.result:
+                result_text = message.result
+
+    # Prefer the final result; fall back to accumulated assistant text
+    return result_text or assistant_text
+
+
 # ---------------------------------------------------------------------------
 # Agent functions
 # ---------------------------------------------------------------------------
@@ -92,18 +105,21 @@ async def generate_itinerary(
 ) -> dict:
     """
     Generate a day-by-day travel itinerary for the given destination and dates.
-    Uses web search to pull in current, real-world information.
+    Uses the Claude Agent SDK with WebSearch to pull in real-world information.
     """
     pref_section = f"\nTraveler preferences: {preferences}" if preferences else ""
 
-    prompt = f"""You are a world-class travel planner. Create a detailed day-by-day
-itinerary for a trip to {destination} from {start_date} to {end_date}.
+    system_prompt = """You are a world-class travel planner agent. You have access to web search
+to find current, real information. Always search the web for up-to-date details about
+attractions, events, pricing, and practical travel tips. Return structured JSON responses."""
+
+    prompt = f"""Create a detailed day-by-day itinerary for a trip to {destination} from {start_date} to {end_date}.
 {pref_section}
 
-Use web search to find current, real information about:
-- Top attractions and activities
+Search the web to find current, real information about:
+- Top attractions and activities in {destination}
 - Local events happening during those dates
-- Practical tips (transport, weather, etc.)
+- Practical tips (transport, weather, costs)
 
 Return your answer as a JSON object with this exact structure (no extra keys):
 {{
@@ -146,13 +162,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Generating itinerary for %s (%s to %s)", destination, start_date, end_date)
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=8192,
-            tools=[WEB_SEARCH_TOOL],
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = _extract_text(response)
+        text = await _run_agent(prompt, system_prompt, max_turns=3)
         result = _extract_json(text)
         logger.info("Itinerary generated successfully for %s", destination)
         return result
@@ -168,16 +178,19 @@ async def search_hotels(
     preferences: str = "",
 ) -> dict:
     """
-    Search for hotels at the destination using Claude + web search.
+    Search for hotels at the destination using the Claude Agent SDK with web search.
     Returns structured hotel results.
     """
     pref_section = f"\nPreferences: {preferences}" if preferences else ""
 
-    prompt = f"""You are a hotel search assistant. Find real, currently operating hotels
-in {destination} for a stay from {start_date} to {end_date}.
+    system_prompt = """You are a hotel search assistant agent. You have access to web search
+to find real, currently operating hotels with actual pricing and ratings.
+Always search the web for up-to-date hotel information. Return structured JSON responses."""
+
+    prompt = f"""Find real, currently operating hotels in {destination} for a stay from {start_date} to {end_date}.
 {pref_section}
 
-Use web search to find actual hotels with real pricing and ratings.
+Search the web to find actual hotels with real pricing and ratings.
 
 Return your answer as a JSON object with this exact structure:
 {{
@@ -202,13 +215,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Searching hotels in %s (%s to %s)", destination, start_date, end_date)
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            tools=[WEB_SEARCH_TOOL],
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = _extract_text(response)
+        text = await _run_agent(prompt, system_prompt, max_turns=3)
         result = _extract_json(text)
         logger.info("Hotel search completed for %s", destination)
         return result
@@ -222,16 +229,19 @@ async def search_restaurants(
     preferences: str = "",
 ) -> dict:
     """
-    Search for local restaurants at the destination using Claude + web search.
-    Returns structured restaurant results.
+    Search for local restaurants at the destination using the Claude Agent SDK
+    with web search. Returns structured restaurant results.
     """
     pref_section = f"\nDining preferences: {preferences}" if preferences else ""
 
-    prompt = f"""You are a local food expert. Find real, currently operating restaurants
-in {destination} that a traveler should try.
+    system_prompt = """You are a local food expert agent. You have access to web search
+to find real, currently operating restaurants with actual ratings and pricing.
+Always search the web for up-to-date restaurant information. Return structured JSON responses."""
+
+    prompt = f"""Find real, currently operating restaurants in {destination} that a traveler should try.
 {pref_section}
 
-Use web search to find actual restaurants with real ratings and price info.
+Search the web to find actual restaurants with real ratings and price info.
 
 Return your answer as a JSON object with this exact structure:
 {{
@@ -262,13 +272,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Searching restaurants in %s", destination)
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=4096,
-            tools=[WEB_SEARCH_TOOL],
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = _extract_text(response)
+        text = await _run_agent(prompt, system_prompt, max_turns=3)
         result = _extract_json(text)
         logger.info("Restaurant search completed for %s", destination)
         return result

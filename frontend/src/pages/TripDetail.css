@@ -253,6 +253,207 @@
   line-height: 1.6;
 }
 
+/* Structured Itinerary Styles */
+.itinerary-structured {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.itinerary-summary {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid var(--teal);
+}
+
+.itinerary-summary p {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.itinerary-block__date {
+  margin-left: auto;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+/* Activity rows */
+.itinerary-activity {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.itinerary-activity:last-child {
+  border-bottom: none;
+}
+
+.itinerary-activity__time {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--coral);
+  min-width: 70px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.itinerary-activity__content strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.itinerary-activity__desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.35rem;
+}
+
+.itinerary-activity__meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.itinerary-activity__location,
+.itinerary-activity__cost {
+  font-size: 0.8rem;
+  color: var(--text-muted, #999);
+}
+
+/* Meals section */
+.itinerary-meals {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.itinerary-meals h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.itinerary-meals__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.itinerary-meal {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.itinerary-meal__label {
+  font-weight: 600;
+  min-width: 100px;
+  flex-shrink: 0;
+}
+
+/* Daily tip */
+.itinerary-day-tip {
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 159, 67, 0.08);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Budget estimate */
+.itinerary-budget {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.itinerary-budget h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.itinerary-budget__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.itinerary-budget__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  background: var(--bg-subtle, rgba(0,0,0,0.02));
+  border-radius: var(--radius-sm);
+}
+
+.itinerary-budget__item--total {
+  background: linear-gradient(135deg, rgba(78, 205, 196, 0.1), rgba(168, 85, 247, 0.1));
+  border: 1px solid rgba(78, 205, 196, 0.2);
+}
+
+.itinerary-budget__label {
+  font-size: 0.82rem;
+  color: var(--text-muted, #999);
+}
+
+.itinerary-budget__value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.itinerary-budget__item--total .itinerary-budget__value {
+  color: var(--teal);
+}
+
+/* Packing tips */
+.itinerary-packing {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.itinerary-packing h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.itinerary-packing__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.itinerary-packing__tag {
+  padding: 0.35rem 0.75rem;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba(255, 107, 107, 0.15);
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* Fallback raw view */
 .itinerary-raw {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -260,11 +461,13 @@
   box-shadow: var(--shadow-md);
 }
 
-.itinerary-raw p {
+.itinerary-raw p,
+.itinerary-raw pre {
   font-size: 0.95rem;
   color: var(--text-secondary);
   line-height: 1.8;
   white-space: pre-wrap;
+  font-family: inherit;
 }
 
 /* Responsive */
