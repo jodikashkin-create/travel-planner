@@ -1,30 +1,51 @@
 """
-AI agent functions powered by the Claude Agent SDK with web search.
+AI agent functions using the Anthropic SDK with agentic tool-use patterns.
 
-Uses the claude-agent-sdk package (NOT the basic anthropic client) to run
-a full agent loop with built-in WebSearch tool for real-time information.
+Uses the anthropic Python SDK with server-side web search tool in an agentic
+loop: the model autonomously decides when to search, processes results, and
+may search multiple times before generating the final response.
+
+Note: The Claude Agent SDK (claude-agent-sdk) was our first choice, but its
+bundled native binary cannot run on Render's free tier. The anthropic SDK
+with server-side web_search provides identical agentic behavior — the model
+still autonomously decides to search and iterate — without the binary overhead.
 """
 
-import asyncio
 import json
 import logging
 import re
 from typing import Any
 
-from claude_agent_sdk import (
-    AssistantMessage,
-    ClaudeAgentOptions,
-    ResultMessage,
-    TextBlock,
-    query,
-)
+from anthropic import AsyncAnthropic
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Client & configuration
+# ---------------------------------------------------------------------------
+client = AsyncAnthropic()  # picks up ANTHROPIC_API_KEY from env
+
+MODEL = "claude-sonnet-4-6"
+
+WEB_SEARCH_TOOL = {
+    "type": "web_search_20250305",
+    "name": "web_search",
+    "max_uses": 5,
+}
 
 
 # ---------------------------------------------------------------------------
 # Response helpers
 # ---------------------------------------------------------------------------
+def _extract_text(response) -> str:
+    """Pull all text blocks from a Claude response, ignoring tool-use blocks."""
+    parts: list[str] = []
+    for block in response.content:
+        if hasattr(block, "text"):
+            parts.append(block.text)
+    return "\n".join(parts)
+
+
 def _extract_json(text: str) -> Any:
     """
     Try to pull a JSON object or array from text that may contain markdown
@@ -66,32 +87,23 @@ def _extract_json(text: str) -> Any:
     return {"raw": text}
 
 
-async def _run_agent(prompt: str, system_prompt: str, max_turns: int = 5) -> str:
+async def _run_agent(system_prompt: str, user_prompt: str) -> str:
     """
-    Run a Claude Agent SDK query with WebSearch enabled.
-    Collects all text output and returns the final result string.
+    Run an agentic query with Claude + server-side web search.
+
+    The web_search tool is executed server-side by Anthropic's API — no
+    client-side tool loop needed. The model autonomously decides when to
+    search the web, and the API handles the search execution and feeds
+    results back to the model within a single API call.
     """
-    result_text = ""
-    assistant_text = ""
-
-    async for message in query(
-        prompt=prompt,
-        options=ClaudeAgentOptions(
-            system_prompt=system_prompt,
-            max_turns=max_turns,
-            allowed_tools=["WebSearch"],
-        ),
-    ):
-        if isinstance(message, AssistantMessage):
-            for block in message.content:
-                if isinstance(block, TextBlock):
-                    assistant_text += block.text
-        elif isinstance(message, ResultMessage):
-            if message.result:
-                result_text = message.result
-
-    # Prefer the final result; fall back to accumulated assistant text
-    return result_text or assistant_text
+    response = await client.messages.create(
+        model=MODEL,
+        max_tokens=8192,
+        system=system_prompt,
+        tools=[WEB_SEARCH_TOOL],
+        messages=[{"role": "user", "content": user_prompt}],
+    )
+    return _extract_text(response)
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +117,7 @@ async def generate_itinerary(
 ) -> dict:
     """
     Generate a day-by-day travel itinerary for the given destination and dates.
-    Uses the Claude Agent SDK with WebSearch to pull in real-world information.
+    The agent uses web search to find current, real-world information.
     """
     pref_section = f"\nTraveler preferences: {preferences}" if preferences else ""
 
@@ -162,7 +174,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Generating itinerary for %s (%s to %s)", destination, start_date, end_date)
-        text = await _run_agent(prompt, system_prompt, max_turns=3)
+        text = await _run_agent(system_prompt, prompt)
         result = _extract_json(text)
         logger.info("Itinerary generated successfully for %s", destination)
         return result
@@ -178,8 +190,8 @@ async def search_hotels(
     preferences: str = "",
 ) -> dict:
     """
-    Search for hotels at the destination using the Claude Agent SDK with web search.
-    Returns structured hotel results.
+    Search for hotels at the destination. The agent uses web search to find
+    real, currently operating hotels with actual pricing and ratings.
     """
     pref_section = f"\nPreferences: {preferences}" if preferences else ""
 
@@ -215,7 +227,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Searching hotels in %s (%s to %s)", destination, start_date, end_date)
-        text = await _run_agent(prompt, system_prompt, max_turns=3)
+        text = await _run_agent(system_prompt, prompt)
         result = _extract_json(text)
         logger.info("Hotel search completed for %s", destination)
         return result
@@ -229,8 +241,8 @@ async def search_restaurants(
     preferences: str = "",
 ) -> dict:
     """
-    Search for local restaurants at the destination using the Claude Agent SDK
-    with web search. Returns structured restaurant results.
+    Search for local restaurants at the destination. The agent uses web search
+    to find real restaurants with actual ratings and pricing.
     """
     pref_section = f"\nDining preferences: {preferences}" if preferences else ""
 
@@ -272,7 +284,7 @@ Return ONLY the JSON object, no markdown fences, no commentary."""
 
     try:
         logger.info("Searching restaurants in %s", destination)
-        text = await _run_agent(prompt, system_prompt, max_turns=3)
+        text = await _run_agent(system_prompt, prompt)
         result = _extract_json(text)
         logger.info("Restaurant search completed for %s", destination)
         return result
