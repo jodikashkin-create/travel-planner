@@ -186,9 +186,18 @@ function NewTrip({ user }) {
         start_date: form.start_date,
         end_date: form.end_date,
         preferences: prefParts.join('. '),
-        accommodation_type: form.accommodation_type,
-        experience_type: form.experience_type,
-        restaurant_pref: form.restaurant_pref,
+        accommodation_type: form.accommodation_type.map((id) => {
+          const opt = ACCOMMODATION_OPTIONS.find((o) => o.id === id)
+          return opt ? opt.label : id
+        }).join(', '),
+        experience_type: form.experience_type.map((id) => {
+          const opt = EXPERIENCE_OPTIONS.find((o) => o.id === id)
+          return opt ? opt.label : id
+        }).join(', '),
+        restaurant_pref: (() => {
+          const opt = RESTAURANT_OPTIONS.find((o) => o.id === form.restaurant_pref)
+          return opt ? opt.label : form.restaurant_pref
+        })(),
         hotspots: form.hotspots.trim(),
         downtime_hours: form.downtime_hours,
       })

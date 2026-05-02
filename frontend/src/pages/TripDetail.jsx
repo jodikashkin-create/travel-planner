@@ -260,6 +260,21 @@ function TripDetail() {
     loadTrip()
   }, [loadTrip])
 
+  // Auto-generate all three when a trip loads with no data
+  const autoGenTriggered = useRef(false)
+  useEffect(() => {
+    if (!trip || autoGenTriggered.current) return
+    const hasItinerary = trip.itinerary && (typeof trip.itinerary === 'string' ? trip.itinerary.length > 0 : true)
+    const hasHotels = Array.isArray(trip.hotels) && trip.hotels.length > 0
+    const hasRestaurants = Array.isArray(trip.restaurants) && trip.restaurants.length > 0
+    if (!hasItinerary && !hasHotels && !hasRestaurants) {
+      autoGenTriggered.current = true
+      handleGenerate('itinerary')
+      handleGenerate('hotels')
+      handleGenerate('restaurants')
+    }
+  }, [trip])
+
   const pollRef = useRef({})
 
   const handleGenerate = async (type) => {
